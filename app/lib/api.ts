@@ -1,5 +1,4 @@
 // Client-side typed wrappers for /api/configs and /api/google-auth endpoints.
-// NOTE: UI components using enabledServices are implemented in P0f.
 
 export type GoogleService =
 	| "gmail"
@@ -14,6 +13,21 @@ export type GoogleService =
 	| "gcontacts"
 	| "gsearch"
 	| "gappsscript";
+
+export const SERVICE_LABELS: Record<GoogleService, string> = {
+	gmail: "Gmail",
+	gcalendar: "Google Calendar",
+	gdrive: "Google Drive",
+	gdocs: "Google Docs",
+	gsheets: "Google Sheets",
+	gslides: "Google Slides",
+	gforms: "Google Forms",
+	gtasks: "Google Tasks",
+	gchat: "Google Chat",
+	gcontacts: "Google Contacts",
+	gsearch: "Google Search",
+	gappsscript: "Apps Script",
+};
 
 export type ConfigRecord = {
 	slug: string;
@@ -70,6 +84,9 @@ export const api = {
 		request<void>(`/api/configs/${encodeURIComponent(slug)}`, {
 			method: "DELETE",
 		}),
+	/** Returns the URL to redirect the browser to for Google OAuth. NOT a fetch — use window.location.href. */
+	googleAuthStartUrl: (slug: string) =>
+		`/api/google-auth/start/${encodeURIComponent(slug)}`,
 	googleAuthStatus: (slug: string) =>
 		request<{ connected: boolean; email?: string }>(
 			`/api/google-auth/status/${encodeURIComponent(slug)}`,

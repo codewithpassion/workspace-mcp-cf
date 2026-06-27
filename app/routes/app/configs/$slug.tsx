@@ -20,49 +20,72 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api, type ConfigRecord } from "@/lib/api";
+import {
+	api,
+	type ConfigRecord,
+	type GoogleService,
+	SERVICE_LABELS,
+} from "@/lib/api";
 
 export const Route = createFileRoute("/app/configs/$slug")({
 	component: EditConfigPage,
 });
 
-// TODO (P0f): add enabledServices checkboxes and Connect Google Account button.
+const ALL_SERVICES = Object.entries(SERVICE_LABELS) as [
+	GoogleService,
+	string,
+][];
 
 function EditConfigPage() {
 	const { slug } = Route.useParams();
 	const router = useRouter();
 	const [record, setRecord] = useState<ConfigRecord | null>(null);
 	const [loadError, setLoadError] = useState<string | null>(null);
-	const [form, setForm] = useState({
-		displayName: "",
-	});
+	const [displayName, setDisplayName] = useState("");
+	const [enabledServices, setEnabledServices] = useState<Set<GoogleService>>(
+		new Set(),
+	);
 	const [saving, setSaving] = useState(false);
 	const [confirmDelete, setConfirmDelete] = useState(false);
 	const [deleting, setDeleting] = useState(false);
+	const [disconnecting, setDisconnecting] = useState(false);
+	const [mcpUrl, setMcpUrl] = useState("");
+
+	useEffect(() => {
+		setMcpUrl(`${window.location.origin}/mcp/${slug}`);
+	}, [slug]);
 
 	useEffect(() => {
 		api
 			.get(slug)
 			.then((r) => {
 				setRecord(r);
-				setForm({ displayName: r.displayName });
+				setDisplayName(r.displayName);
+				setEnabledServices(new Set(r.enabledServices));
 			})
 			.catch((e: Error) => setLoadError(e.message));
 	}, [slug]);
 
-	function update<K extends keyof typeof form>(
-		key: K,
-		value: (typeof form)[K],
-	) {
-		setForm((f) => ({ ...f, [key]: value }));
+	function toggleService(id: GoogleService) {
+		setEnabledServices((prev) => {
+			const next = new Set(prev);
+			if (next.has(id)) next.delete(id);
+			else next.add(id);
+			return next;
+		});
 	}
 
 	async function onSave(e: React.FormEvent) {
 		e.preventDefault();
+		if (enabledServices.size === 0) {
+			toast.error("Select at least one service");
+			return;
+		}
 		setSaving(true);
 		try {
 			const updated = await api.update(slug, {
-				displayName: form.displayName,
+				displayName,
+				enabledServices: Array.from(enabledServices),
 			});
 			setRecord(updated);
 			toast.success("Saved");
@@ -85,6 +108,31 @@ function EditConfigPage() {
 		}
 	}
 
+	async function onDisconnect() {
+		setDisconnecting(true);
+		try {
+			await api.googleAuthDisconnect(slug);
+			setRecord((prev) =>
+				prev
+					? {
+							...prev,
+							googleAccountEmail: undefined,
+							googleAccountSub: undefined,
+						}
+					: prev,
+			);
+			toast.success("Google account disconnected");
+		} catch (e) {
+			toast.error((e as Error).message);
+		} finally {
+			setDisconnecting(false);
+		}
+	}
+
+	function onConnect() {
+		window.location.href = api.googleAuthStartUrl(slug);
+	}
+
 	if (loadError) {
 		return (
 			<div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
@@ -99,50 +147,131 @@ function EditConfigPage() {
 
 	return (
 		<>
-			<Card className="mx-auto max-w-xl">
-				<CardHeader>
-					<CardTitle className="font-mono">{record.slug}</CardTitle>
-					<CardDescription>
-						{record.googleAccountEmail
-							? `Connected: ${record.googleAccountEmail}`
-							: "No Google account connected"}
-					</CardDescription>
-				</CardHeader>
-				<form onSubmit={onSave}>
-					<CardContent className="space-y-4">
-						<div className="space-y-2">
-							<Label htmlFor="displayName">Display name</Label>
-							<Input
-								id="displayName"
-								required
-								value={form.displayName}
-								onChange={(e) => update("displayName", e.target.value)}
-							/>
-						</div>
-					</CardContent>
-					<CardFooter className="justify-between gap-2">
+			<div className="mx-auto max-w-xl space-y-4">
+				{/* MCP endpoint */}
+				<div className="rounded-md border p-3">
+					<p className="mb-1 text-xs font-medium text-muted-foreground">
+						MCP endpoint
+					</p>
+					<div className="flex items-center gap-2">
+						<code className="flex-1 truncate font-mono text-xs">{mcpUrl}</code>
 						<Button
-							type="button"
-							variant="destructive"
-							onClick={() => setConfirmDelete(true)}
+							variant="ghost"
+							size="sm"
+							onClick={async () => {
+								try {
+									await navigator.clipboard.writeText(mcpUrl);
+									toast.success("MCP URL copied");
+								} catch {
+									toast.error("Copy failed");
+								}
+							}}
 						>
-							Delete
+							Copy
 						</Button>
-						<div className="flex gap-2">
+					</div>
+				</div>
+
+				{/* Config form */}
+				<Card>
+					<CardHeader>
+						<CardTitle className="font-mono">{record.slug}</CardTitle>
+						<CardDescription>Edit configuration settings</CardDescription>
+					</CardHeader>
+					<form onSubmit={onSave}>
+						<CardContent className="space-y-4">
+							<div className="space-y-2">
+								<Label htmlFor="displayName">Display name</Label>
+								<Input
+									id="displayName"
+									required
+									value={displayName}
+									onChange={(e) => setDisplayName(e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Services</Label>
+								<div className="grid grid-cols-2 gap-2 pt-1">
+									{ALL_SERVICES.map(([id, label]) => (
+										<label
+											key={id}
+											className="flex cursor-pointer items-center gap-2 text-sm"
+										>
+											<input
+												type="checkbox"
+												className="h-4 w-4 accent-primary"
+												checked={enabledServices.has(id)}
+												onChange={() => toggleService(id)}
+											/>
+											{label}
+										</label>
+									))}
+								</div>
+							</div>
+						</CardContent>
+						<CardFooter className="justify-between gap-2">
 							<Button
 								type="button"
-								variant="outline"
-								onClick={() => router.navigate({ to: "/app/configs" })}
+								variant="destructive"
+								onClick={() => setConfirmDelete(true)}
 							>
-								Back
+								Delete
 							</Button>
-							<Button type="submit" disabled={saving}>
-								{saving ? "Saving..." : "Save"}
-							</Button>
-						</div>
-					</CardFooter>
-				</form>
-			</Card>
+							<div className="flex gap-2">
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => router.navigate({ to: "/app/configs" })}
+								>
+									Back
+								</Button>
+								<Button type="submit" disabled={saving}>
+									{saving ? "Saving..." : "Save"}
+								</Button>
+							</div>
+						</CardFooter>
+					</form>
+				</Card>
+
+				{/* Google account */}
+				<Card>
+					<CardHeader>
+						<CardTitle>Google account</CardTitle>
+						<CardDescription>
+							Link a Google account to authenticate MCP tool requests.
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						{record.googleAccountEmail ? (
+							<div className="flex items-center justify-between">
+								<div>
+									<p className="text-sm font-medium">
+										{record.googleAccountEmail}
+									</p>
+									<p className="text-xs text-muted-foreground">Connected</p>
+								</div>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={onDisconnect}
+									disabled={disconnecting}
+								>
+									{disconnecting ? "Disconnecting..." : "Disconnect"}
+								</Button>
+							</div>
+						) : (
+							<div className="flex items-center justify-between">
+								<p className="text-sm text-muted-foreground">
+									No Google account connected
+								</p>
+								<Button variant="outline" size="sm" onClick={onConnect}>
+									Connect Google account
+								</Button>
+							</div>
+						)}
+					</CardContent>
+				</Card>
+			</div>
 
 			<Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
 				<DialogContent>

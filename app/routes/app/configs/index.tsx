@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Table,
@@ -10,7 +11,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { api, type ConfigRecord } from "@/lib/api";
+import { api, type ConfigRecord, SERVICE_LABELS } from "@/lib/api";
 
 export const Route = createFileRoute("/app/configs/")({
 	component: ConfigsList,
@@ -62,6 +63,7 @@ function ConfigsList() {
 							<TableHead>Display name</TableHead>
 							<TableHead>MCP URL</TableHead>
 							<TableHead>Google account</TableHead>
+							<TableHead>Services</TableHead>
 							<TableHead className="text-right">Actions</TableHead>
 						</TableRow>
 					</TableHeader>
@@ -69,7 +71,7 @@ function ConfigsList() {
 						{configs === null && !error && (
 							<TableRow>
 								<TableCell
-									colSpan={5}
+									colSpan={6}
 									className="text-center text-muted-foreground"
 								>
 									Loading...
@@ -79,7 +81,7 @@ function ConfigsList() {
 						{configs?.length === 0 && (
 							<TableRow>
 								<TableCell
-									colSpan={5}
+									colSpan={6}
 									className="text-center text-muted-foreground"
 								>
 									No configurations yet. Create one to get started.
@@ -102,9 +104,14 @@ function ConfigsList() {
 									<McpUrlCell slug={c.slug} />
 								</TableCell>
 								<TableCell>
-									{c.googleAccountEmail ?? (
-										<span className="text-muted-foreground">Not connected</span>
+									{c.googleAccountEmail ? (
+										<span className="text-sm">{c.googleAccountEmail}</span>
+									) : (
+										<Badge variant="outline">Not connected</Badge>
 									)}
+								</TableCell>
+								<TableCell>
+									<ServicesBadges services={c.enabledServices} />
 								</TableCell>
 								<TableCell className="space-x-2 text-right">
 									<Button
@@ -132,6 +139,22 @@ function ConfigsList() {
 					</TableBody>
 				</Table>
 			</div>
+		</div>
+	);
+}
+
+function ServicesBadges({ services }: { services: string[] }) {
+	const MAX = 3;
+	const shown = services.slice(0, MAX);
+	const extra = services.length - MAX;
+	return (
+		<div className="flex flex-wrap gap-1">
+			{shown.map((s) => (
+				<Badge key={s} variant="secondary">
+					{SERVICE_LABELS[s as keyof typeof SERVICE_LABELS] ?? s}
+				</Badge>
+			))}
+			{extra > 0 && <Badge variant="outline">+{extra}</Badge>}
 		</div>
 	);
 }
