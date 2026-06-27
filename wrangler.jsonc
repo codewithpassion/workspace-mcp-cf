@@ -1,0 +1,56 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "planemcpgw",
+	"main": "src/server.ts",
+	"compatibility_date": "2026-05-01",
+	"compatibility_flags": ["nodejs_compat"],
+	/**
+	 * Note: Use secrets to store sensitive data.
+	 * https://developers.cloudflare.com/workers/configuration/secrets/
+	 *
+	 * Commands to set secrets:
+	 * npx wrangler secret put CLERK_CLIENT_ID
+	 * npx wrangler secret put CLERK_CLIENT_SECRET
+	 * npx wrangler secret put CLERK_SECRET_KEY
+	 * npx wrangler secret put CLERK_FRONTEND_API
+	 * npx wrangler secret put COOKIE_ENCRYPTION_KEY
+	 *
+	 * Per-user Plane configurations are stored in OAUTH_KV (no PLANE_* env vars).
+	 */
+	"migrations": [
+		{
+			"new_sqlite_classes": ["MyMCP"],
+			"tag": "v1"
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"class_name": "MyMCP",
+				"name": "MCP_OBJECT"
+			}
+		]
+	},
+	"kv_namespaces": [
+		{
+			"binding": "OAUTH_KV",
+			"id": "74ef76f891b24987a6230480e8a454da"
+		}
+	],
+	"observability": {
+		"enabled": true
+	},
+	"dev": {
+		"port": 8788
+	},
+	"routes": [
+		{
+			"custom_domain": true,
+			"pattern": "planemcpgw.rockyshoreslabs.io"
+		}
+	]
+}
