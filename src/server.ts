@@ -21,7 +21,7 @@ export default {
 			const rewritten = new URL(request.url);
 			rewritten.pathname = `/${transport}${rest ?? ""}`;
 			const headers = new Headers(request.headers);
-			headers.set("X-Plane-Config-Slug", slug);
+			headers.set("X-Config-Slug", slug);
 			const forwarded = new Request(rewritten, {
 				method: request.method,
 				headers,

@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "planemcpgw",
+	"name": "workspace-mcp-cf",
 	"main": "src/server.ts",
 	"compatibility_date": "2026-05-01",
 	"compatibility_flags": ["nodejs_compat"],
@@ -19,7 +19,6 @@
 	 * npx wrangler secret put CLERK_FRONTEND_API
 	 * npx wrangler secret put COOKIE_ENCRYPTION_KEY
 	 *
-	 * Per-user Plane configurations are stored in OAUTH_KV (no PLANE_* env vars).
 	 */
 	"migrations": [
 		{
@@ -50,7 +49,7 @@
 	"routes": [
 		{
 			"custom_domain": true,
-			"pattern": "planemcpgw.rockyshoreslabs.io"
+			"pattern": "workspace-mcp-cf.rockyshoreslabs.io"
 		}
 	]
 }

@@ -1,12 +1,8 @@
-export interface PlaneConfigRecord {
+export interface ConfigRecord {
 	slug: string;
 	displayName: string;
-	planeWorkspaceSlug: string;
 	apiKey: string;
 	baseUrl?: string;
-	projectId?: string;
-	projectName?: string;
-	projectIdentifier?: string;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -44,22 +40,22 @@ export function redactApiKey(key: string): string {
 }
 
 export const cfgKey = (userId: string, slug: string) =>
-	`plane:cfg:${userId}:${slug}`;
+	`ws:cfg:${userId}:${slug}`;
 
-const userPrefix = (userId: string) => `plane:cfg:${userId}:`;
+const userPrefix = (userId: string) => `ws:cfg:${userId}:`;
 
 export async function loadConfig(
 	env: Env,
 	userId: string,
 	slug: string,
-): Promise<PlaneConfigRecord | null> {
-	return env.OAUTH_KV.get<PlaneConfigRecord>(cfgKey(userId, slug), "json");
+): Promise<ConfigRecord | null> {
+	return env.OAUTH_KV.get<ConfigRecord>(cfgKey(userId, slug), "json");
 }
 
 export async function saveConfig(
 	env: Env,
 	userId: string,
-	cfg: PlaneConfigRecord,
+	cfg: ConfigRecord,
 ): Promise<void> {
 	await env.OAUTH_KV.put(cfgKey(userId, cfg.slug), JSON.stringify(cfg));
 }
@@ -75,10 +71,10 @@ export async function deleteConfig(
 export async function listConfigs(
 	env: Env,
 	userId: string,
-): Promise<PlaneConfigRecord[]> {
+): Promise<ConfigRecord[]> {
 	const list = await env.OAUTH_KV.list({ prefix: userPrefix(userId) });
 	const records = await Promise.all(
-		list.keys.map((k) => env.OAUTH_KV.get<PlaneConfigRecord>(k.name, "json")),
+		list.keys.map((k) => env.OAUTH_KV.get<ConfigRecord>(k.name, "json")),
 	);
-	return records.filter((r): r is PlaneConfigRecord => r !== null);
+	return records.filter((r): r is ConfigRecord => r !== null);
 }

@@ -11,7 +11,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { api, type PlaneConfigRecord } from "@/lib/api";
+import { api, type ConfigRecord } from "@/lib/api";
 
 export const Route = createFileRoute("/app/configs/")({
 	component: ConfigsList,
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/app/configs/")({
 
 function ConfigsList() {
 	const router = useRouter();
-	const [configs, setConfigs] = useState<PlaneConfigRecord[] | null>(null);
+	const [configs, setConfigs] = useState<ConfigRecord[] | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -40,21 +40,10 @@ function ConfigsList() {
 		}
 	}
 
-	async function onTest(slug: string) {
-		const t = toast.loading(`Testing ${slug}...`);
-		try {
-			const result = await api.test(slug);
-			if (result.ok) toast.success(`${slug}: connection OK`, { id: t });
-			else toast.error(`${slug}: ${result.error}`, { id: t });
-		} catch (e) {
-			toast.error((e as Error).message, { id: t });
-		}
-	}
-
 	return (
 		<div className="space-y-6">
 			<div className="flex items-center justify-between">
-				<h1 className="text-2xl font-semibold">Plane configurations</h1>
+				<h1 className="text-2xl font-semibold">MCP configurations</h1>
 				<Button onClick={() => router.navigate({ to: "/app/configs/new" })}>
 					New config
 				</Button>
@@ -72,8 +61,6 @@ function ConfigsList() {
 						<TableRow>
 							<TableHead>Slug</TableHead>
 							<TableHead>Display name</TableHead>
-							<TableHead>Plane workspace</TableHead>
-							<TableHead>Project</TableHead>
 							<TableHead>MCP URL</TableHead>
 							<TableHead>API key</TableHead>
 							<TableHead className="text-right">Actions</TableHead>
@@ -83,7 +70,7 @@ function ConfigsList() {
 						{configs === null && !error && (
 							<TableRow>
 								<TableCell
-									colSpan={7}
+									colSpan={5}
 									className="text-center text-muted-foreground"
 								>
 									Loading...
@@ -93,7 +80,7 @@ function ConfigsList() {
 						{configs?.length === 0 && (
 							<TableRow>
 								<TableCell
-									colSpan={7}
+									colSpan={5}
 									className="text-center text-muted-foreground"
 								>
 									No configurations yet. Create one to get started.
@@ -112,19 +99,6 @@ function ConfigsList() {
 									</Link>
 								</TableCell>
 								<TableCell>{c.displayName}</TableCell>
-								<TableCell className="font-mono text-sm">
-									{c.planeWorkspaceSlug}
-								</TableCell>
-								<TableCell className="text-sm">
-									{c.projectId ? (
-										<span className="font-mono">
-											{c.projectName ?? c.projectId.slice(0, 8)}
-											{c.projectIdentifier ? ` (${c.projectIdentifier})` : ""}
-										</span>
-									) : (
-										<span className="text-muted-foreground">All</span>
-									)}
-								</TableCell>
 								<TableCell>
 									<McpUrlCell slug={c.slug} />
 								</TableCell>
@@ -134,13 +108,6 @@ function ConfigsList() {
 									</Badge>
 								</TableCell>
 								<TableCell className="space-x-2 text-right">
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={() => onTest(c.slug)}
-									>
-										Test
-									</Button>
 									<Button
 										variant="outline"
 										size="sm"

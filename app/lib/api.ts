@@ -1,12 +1,8 @@
-export type PlaneConfigRecord = {
+export type ConfigRecord = {
 	slug: string;
 	displayName: string;
-	planeWorkspaceSlug: string;
 	apiKey: string;
 	baseUrl?: string;
-	projectId?: string;
-	projectName?: string;
-	projectIdentifier?: string;
 	createdAt: string;
 	updatedAt: string;
 };
@@ -14,41 +10,11 @@ export type PlaneConfigRecord = {
 export type CreateConfigInput = {
 	slug: string;
 	displayName: string;
-	planeWorkspaceSlug: string;
-	apiKey: string;
-	baseUrl?: string;
-	projectId?: string;
-	projectName?: string;
-	projectIdentifier?: string;
-};
-
-export type ProbeProjectsInput = {
-	planeWorkspaceSlug: string;
 	apiKey: string;
 	baseUrl?: string;
 };
 
-export type UpdateConfigInput = Partial<
-	Omit<
-		CreateConfigInput,
-		"slug" | "projectId" | "projectName" | "projectIdentifier"
-	>
-> & {
-	// null clears the pin (all-projects mode); undefined leaves it unchanged.
-	projectId?: string | null;
-	projectName?: string | null;
-	projectIdentifier?: string | null;
-};
-
-export type ProjectOption = {
-	id: string;
-	name: string;
-	identifier: string;
-};
-
-export type TestResult =
-	| { ok: true; workspace?: Record<string, unknown> }
-	| { ok: false; error: string };
+export type UpdateConfigInput = Partial<Omit<CreateConfigInput, "slug">>;
 
 async function request<T>(input: string, init?: RequestInit): Promise<T> {
 	const res = await fetch(input, {
@@ -70,34 +36,21 @@ async function request<T>(input: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-	list: () => request<PlaneConfigRecord[]>("/api/configs"),
+	list: () => request<ConfigRecord[]>("/api/configs"),
 	get: (slug: string) =>
-		request<PlaneConfigRecord>(`/api/configs/${encodeURIComponent(slug)}`),
+		request<ConfigRecord>(`/api/configs/${encodeURIComponent(slug)}`),
 	create: (body: CreateConfigInput) =>
-		request<PlaneConfigRecord>("/api/configs", {
+		request<ConfigRecord>("/api/configs", {
 			method: "POST",
 			body: JSON.stringify(body),
 		}),
 	update: (slug: string, body: UpdateConfigInput) =>
-		request<PlaneConfigRecord>(`/api/configs/${encodeURIComponent(slug)}`, {
+		request<ConfigRecord>(`/api/configs/${encodeURIComponent(slug)}`, {
 			method: "PATCH",
 			body: JSON.stringify(body),
 		}),
 	remove: (slug: string) =>
 		request<void>(`/api/configs/${encodeURIComponent(slug)}`, {
 			method: "DELETE",
-		}),
-	test: (slug: string) =>
-		request<TestResult>(`/api/configs/${encodeURIComponent(slug)}/test`, {
-			method: "POST",
-		}),
-	listProjects: (slug: string) =>
-		request<ProjectOption[]>(
-			`/api/configs/${encodeURIComponent(slug)}/projects`,
-		),
-	probeProjects: (body: ProbeProjectsInput) =>
-		request<ProjectOption[]>("/api/configs/probe-projects", {
-			method: "POST",
-			body: JSON.stringify(body),
 		}),
 };
