@@ -18,14 +18,15 @@ export const Route = createFileRoute("/app/configs/new")({
 	component: NewConfigPage,
 });
 
+// TODO (P0f): add enabledServices multi-select checkboxes.
+// For now, defaults to all services disabled until the user edits.
+
 function NewConfigPage() {
 	const router = useRouter();
 	const [submitting, setSubmitting] = useState(false);
 	const [form, setForm] = useState({
 		slug: "",
 		displayName: "",
-		apiKey: "",
-		baseUrl: "",
 	});
 
 	function update<K extends keyof typeof form>(
@@ -42,8 +43,7 @@ function NewConfigPage() {
 			await api.create({
 				slug: form.slug,
 				displayName: form.displayName,
-				apiKey: form.apiKey,
-				baseUrl: form.baseUrl || undefined,
+				enabledServices: [],
 			});
 			toast.success(`Created config "${form.slug}"`);
 			router.navigate({ to: "/app/configs" });
@@ -87,26 +87,6 @@ function NewConfigPage() {
 							placeholder="My workspace"
 							value={form.displayName}
 							onChange={(e) => update("displayName", e.target.value)}
-						/>
-					</div>
-					<div className="space-y-2">
-						<Label htmlFor="apiKey">API key</Label>
-						<Input
-							id="apiKey"
-							type="password"
-							required
-							value={form.apiKey}
-							onChange={(e) => update("apiKey", e.target.value)}
-						/>
-					</div>
-					<div className="space-y-2">
-						<Label htmlFor="baseUrl">Base URL (optional)</Label>
-						<Input
-							id="baseUrl"
-							type="url"
-							placeholder="https://api.example.com"
-							value={form.baseUrl}
-							onChange={(e) => update("baseUrl", e.target.value)}
 						/>
 					</div>
 				</CardContent>

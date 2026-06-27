@@ -26,6 +26,8 @@ export const Route = createFileRoute("/app/configs/$slug")({
 	component: EditConfigPage,
 });
 
+// TODO (P0f): add enabledServices checkboxes and Connect Google Account button.
+
 function EditConfigPage() {
 	const { slug } = Route.useParams();
 	const router = useRouter();
@@ -33,8 +35,6 @@ function EditConfigPage() {
 	const [loadError, setLoadError] = useState<string | null>(null);
 	const [form, setForm] = useState({
 		displayName: "",
-		apiKey: "",
-		baseUrl: "",
 	});
 	const [saving, setSaving] = useState(false);
 	const [confirmDelete, setConfirmDelete] = useState(false);
@@ -45,11 +45,7 @@ function EditConfigPage() {
 			.get(slug)
 			.then((r) => {
 				setRecord(r);
-				setForm({
-					displayName: r.displayName,
-					apiKey: "",
-					baseUrl: r.baseUrl ?? "",
-				});
+				setForm({ displayName: r.displayName });
 			})
 			.catch((e: Error) => setLoadError(e.message));
 	}, [slug]);
@@ -67,11 +63,8 @@ function EditConfigPage() {
 		try {
 			const updated = await api.update(slug, {
 				displayName: form.displayName,
-				baseUrl: form.baseUrl || undefined,
-				...(form.apiKey ? { apiKey: form.apiKey } : {}),
 			});
 			setRecord(updated);
-			setForm((f) => ({ ...f, apiKey: "" }));
 			toast.success("Saved");
 		} catch (e) {
 			toast.error((e as Error).message);
@@ -110,7 +103,9 @@ function EditConfigPage() {
 				<CardHeader>
 					<CardTitle className="font-mono">{record.slug}</CardTitle>
 					<CardDescription>
-						Stored API key: <span className="font-mono">{record.apiKey}</span>
+						{record.googleAccountEmail
+							? `Connected: ${record.googleAccountEmail}`
+							: "No Google account connected"}
 					</CardDescription>
 				</CardHeader>
 				<form onSubmit={onSave}>
@@ -122,26 +117,6 @@ function EditConfigPage() {
 								required
 								value={form.displayName}
 								onChange={(e) => update("displayName", e.target.value)}
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="apiKey">Rotate API key (leave blank to keep)</Label>
-							<Input
-								id="apiKey"
-								type="password"
-								placeholder="••••••••"
-								value={form.apiKey}
-								onChange={(e) => update("apiKey", e.target.value)}
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="baseUrl">Base URL (optional)</Label>
-							<Input
-								id="baseUrl"
-								type="url"
-								placeholder="https://api.example.com"
-								value={form.baseUrl}
-								onChange={(e) => update("baseUrl", e.target.value)}
 							/>
 						</div>
 					</CardContent>

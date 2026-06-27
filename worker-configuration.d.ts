@@ -8,6 +8,8 @@ declare namespace Cloudflare {
 	}
 	interface Env {
 		OAUTH_KV: KVNamespace;
+		/** Google Workspace config + token storage. Create with: wrangler kv namespace create WS_KV */
+		WS_KV: KVNamespace;
 		COOKIE_ENCRYPTION_KEY: string;
 		CLERK_PUBLISHABLE_KEY: string;
 		CLERK_SECRET_KEY: string;
@@ -15,6 +17,12 @@ declare namespace Cloudflare {
 		CLERK_FRONTEND_API: string;
 		CLERK_CLIENT_ID: string;
 		CLERK_CLIENT_SECRET: string;
+		/** Google OAuth client id (from Google Cloud Console). */
+		GOOGLE_CLIENT_ID: string;
+		/** Google OAuth client secret (from Google Cloud Console). */
+		GOOGLE_CLIENT_SECRET: string;
+		/** AES-256-GCM key for refresh token encryption. Generate: openssl rand -hex 32 */
+		GOOGLE_TOKEN_ENCRYPTION_KEY: string;
 		MCP_OBJECT: DurableObjectNamespace<import("./src/server").MyMCP>;
 	}
 }

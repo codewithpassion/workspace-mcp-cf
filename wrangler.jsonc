@@ -19,6 +19,12 @@
 	 * npx wrangler secret put CLERK_FRONTEND_API
 	 * npx wrangler secret put COOKIE_ENCRYPTION_KEY
 	 *
+	 * Google Workspace secrets (new):
+	 * npx wrangler secret put GOOGLE_CLIENT_ID
+	 * npx wrangler secret put GOOGLE_CLIENT_SECRET
+	 * npx wrangler secret put GOOGLE_TOKEN_ENCRYPTION_KEY
+	 *   (generate with: openssl rand -hex 32)
+	 *
 	 */
 	"migrations": [
 		{
@@ -38,6 +44,16 @@
 		{
 			"binding": "OAUTH_KV",
 			"id": "74ef76f891b24987a6230480e8a454da"
+		},
+		{
+			/**
+			 * Google Workspace config + token storage (separate from OAUTH_KV).
+			 * PLACEHOLDER id — replace before deploying:
+			 *   wrangler kv namespace create WS_KV
+			 * Local dev (`bun run dev`) simulates KV in .wrangler/state/ regardless.
+			 */
+			"binding": "WS_KV",
+			"id": "00000000000000000000000000000001"
 		}
 	],
 	"observability": {

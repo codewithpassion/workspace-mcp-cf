@@ -1,8 +1,26 @@
+// Client-side typed wrappers for /api/configs and /api/google-auth endpoints.
+// NOTE: UI components using enabledServices are implemented in P0f.
+
+export type GoogleService =
+	| "gmail"
+	| "gcalendar"
+	| "gdrive"
+	| "gdocs"
+	| "gsheets"
+	| "gslides"
+	| "gforms"
+	| "gtasks"
+	| "gchat"
+	| "gcontacts"
+	| "gsearch"
+	| "gappsscript";
+
 export type ConfigRecord = {
 	slug: string;
 	displayName: string;
-	apiKey: string;
-	baseUrl?: string;
+	enabledServices: GoogleService[];
+	googleAccountEmail?: string;
+	googleAccountSub?: string;
 	createdAt: string;
 	updatedAt: string;
 };
@@ -10,8 +28,7 @@ export type ConfigRecord = {
 export type CreateConfigInput = {
 	slug: string;
 	displayName: string;
-	apiKey: string;
-	baseUrl?: string;
+	enabledServices: GoogleService[];
 };
 
 export type UpdateConfigInput = Partial<Omit<CreateConfigInput, "slug">>;
@@ -51,6 +68,14 @@ export const api = {
 		}),
 	remove: (slug: string) =>
 		request<void>(`/api/configs/${encodeURIComponent(slug)}`, {
+			method: "DELETE",
+		}),
+	googleAuthStatus: (slug: string) =>
+		request<{ connected: boolean; email?: string }>(
+			`/api/google-auth/status/${encodeURIComponent(slug)}`,
+		),
+	googleAuthDisconnect: (slug: string) =>
+		request<void>(`/api/google-auth/${encodeURIComponent(slug)}`, {
 			method: "DELETE",
 		}),
 };

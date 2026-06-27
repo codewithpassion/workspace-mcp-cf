@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Table,
@@ -62,7 +61,7 @@ function ConfigsList() {
 							<TableHead>Slug</TableHead>
 							<TableHead>Display name</TableHead>
 							<TableHead>MCP URL</TableHead>
-							<TableHead>API key</TableHead>
+							<TableHead>Google account</TableHead>
 							<TableHead className="text-right">Actions</TableHead>
 						</TableRow>
 					</TableHeader>
@@ -103,9 +102,9 @@ function ConfigsList() {
 									<McpUrlCell slug={c.slug} />
 								</TableCell>
 								<TableCell>
-									<Badge variant="secondary" className="font-mono">
-										{c.apiKey}
-									</Badge>
+									{c.googleAccountEmail ?? (
+										<span className="text-muted-foreground">Not connected</span>
+									)}
 								</TableCell>
 								<TableCell className="space-x-2 text-right">
 									<Button
