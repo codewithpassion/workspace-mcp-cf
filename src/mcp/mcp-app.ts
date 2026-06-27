@@ -6,6 +6,7 @@ import { ClerkHandler } from "../clerk-handler";
 import { loadGoogleConfig, loadGoogleToken } from "../storage";
 import type { Props } from "../utils";
 import { getGoogleService, type ToolContext } from "./google-service";
+import { register as registerCalendar } from "./tools/gcalendar";
 
 export class MyMCP extends McpAgent<Env, Record<string, never>, Props> {
 	server = new McpServer({
@@ -128,12 +129,12 @@ export class MyMCP extends McpAgent<Env, Record<string, never>, Props> {
 		);
 
 		// ─── Module tool registrations ─────────────────────────────────────────
-		// Phase 1+ modules call register(this.server, ctx) here.
 		// Registration strategy: ALL tools registered unconditionally at init().
 		// At call time, ctx.getService() checks enabledServices and throws
 		// if the service is not enabled for the resolved config.
 		// (Slug is unknown at init() so conditional registration is not possible.)
-		void ctx; // ctx is used by module register() calls; suppress unused warning for now
+		registerCalendar(this.server, ctx);
+		// Phase 1+ modules follow here: registerGmail, registerDrive, …
 	}
 }
 

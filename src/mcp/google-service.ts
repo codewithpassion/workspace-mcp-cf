@@ -95,6 +95,39 @@ export async function getGoogleService(
 	return { accessToken, accountEmail: tokenRecord.accountEmail };
 }
 
+// ─── shared authenticated fetch ───────────────────────────────────────────────
+
+/**
+ * Authenticated fetch helper for Google REST APIs, shared by ALL service modules.
+ * Sets the Bearer token + JSON content-type, merges caller headers, returns parsed
+ * JSON (or null for 204), and throws `Google API <status>: <body>` on non-2xx.
+ *
+ * Module usage:
+ *   const { accessToken } = await ctx.getService("gcalendar");
+ *   const data = await googleApiFetch(accessToken, url, { method: "POST", body });
+ */
+export async function googleApiFetch(
+	accessToken: string,
+	url: string,
+	init?: RequestInit,
+): Promise<unknown> {
+	const headers: Record<string, string> = {
+		Authorization: `Bearer ${accessToken}`,
+		"Content-Type": "application/json",
+	};
+	if (init?.headers) {
+		const h = init.headers as Record<string, string>;
+		for (const [k, v] of Object.entries(h)) headers[k] = v;
+	}
+	const resp = await fetch(url, { ...init, headers });
+	if (resp.status === 204) return null;
+	if (!resp.ok) {
+		const body = await resp.text();
+		throw new Error(`Google API ${resp.status}: ${body}`);
+	}
+	return resp.json();
+}
+
 // ─── internal: token refresh ──────────────────────────────────────────────────
 
 interface TokenResponse {
