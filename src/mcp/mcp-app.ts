@@ -6,7 +6,18 @@ import { ClerkHandler } from "../clerk-handler";
 import { loadGoogleConfig, loadGoogleToken } from "../storage";
 import type { Props } from "../utils";
 import { getGoogleService, type ToolContext } from "./google-service";
+import { register as registerAppsScript } from "./tools/gappsscript";
 import { register as registerCalendar } from "./tools/gcalendar";
+import { register as registerChat } from "./tools/gchat";
+import { register as registerContacts } from "./tools/gcontacts";
+import { register as registerDocs } from "./tools/gdocs";
+import { register as registerDrive } from "./tools/gdrive";
+import { register as registerForms } from "./tools/gforms";
+import { register as registerGmail } from "./tools/gmail";
+import { register as registerSearch } from "./tools/gsearch";
+import { register as registerSheets } from "./tools/gsheets";
+import { register as registerSlides } from "./tools/gslides";
+import { register as registerTasks } from "./tools/gtasks";
 
 export class MyMCP extends McpAgent<Env, Record<string, never>, Props> {
 	server = new McpServer({
@@ -134,7 +145,17 @@ export class MyMCP extends McpAgent<Env, Record<string, never>, Props> {
 		// if the service is not enabled for the resolved config.
 		// (Slug is unknown at init() so conditional registration is not possible.)
 		registerCalendar(this.server, ctx);
-		// Phase 1+ modules follow here: registerGmail, registerDrive, …
+		registerGmail(this.server, ctx);
+		registerDrive(this.server, ctx);
+		registerDocs(this.server, ctx);
+		registerSheets(this.server, ctx);
+		registerSlides(this.server, ctx);
+		registerForms(this.server, ctx);
+		registerTasks(this.server, ctx);
+		registerChat(this.server, ctx);
+		registerContacts(this.server, ctx);
+		registerSearch(this.server, ctx);
+		registerAppsScript(this.server, ctx);
 	}
 }
 
