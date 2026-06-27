@@ -112,6 +112,12 @@ Register tools in `MyMCP.init()` in `src/mcp/mcp-app.ts`. Use `this.server.tool(
 - shadcn/ui + Tailwind v4 — components.
 - `zod` — input validation.
 
+## Reference repos
+
+`tmp/` is gitignored. Currently contains:
+
+- `tmp/google_workspace_mcp` — clone of [taylorwilsdon/google_workspace_mcp](https://github.com/taylorwilsdon/google_workspace_mcp), used as reference for implementing Google Workspace MCP tools.
+
 ## Common Gotchas
 
 1. **MCP path requires a slug**: `/mcp` alone is unrouted (404). Always `/mcp/<slug>`.
