@@ -6,7 +6,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-	server: { port: 8788 },
+	server: { port: 8788, allowedHosts: true },
 	resolve: {
 		alias: {
 			"@": fileURLToPath(new URL("./app", import.meta.url)),

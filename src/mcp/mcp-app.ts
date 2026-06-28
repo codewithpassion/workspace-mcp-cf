@@ -3,7 +3,6 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Connection, ConnectionContext } from "agents";
 import { McpAgent } from "agents/mcp";
 import { ClerkHandler } from "../clerk-handler";
-import { loadGoogleConfig, loadGoogleToken } from "../storage";
 import type { Props } from "../utils";
 import { getGoogleService, type ToolContext } from "./google-service";
 import { register as registerAppsScript } from "./tools/gappsscript";
@@ -85,59 +84,6 @@ export class MyMCP extends McpAgent<Env, Record<string, never>, Props> {
 				return getGoogleService(this.env, uid, this._slug, service);
 			},
 		};
-
-		// ─── Debug tool (P0a verification) ────────────────────────────────────
-		// Remove after Phase 3 runtime verification confirms the slug path works.
-		this.server.tool(
-			"__debug_config",
-			"Returns the resolved config slug, userId, and loaded GoogleConfigRecord " +
-				"(or 'no config'). Used to verify the X-Config-Slug → DO → tool path.",
-			{},
-			async () => {
-				const slug = this._slug;
-				const userId = this.props?.userId;
-
-				if (!slug || !userId) {
-					return {
-						content: [
-							{
-								type: "text" as const,
-								text: JSON.stringify(
-									{
-										slug: slug ?? null,
-										userId: userId ?? null,
-										error: "session not fully established",
-									},
-									null,
-									2,
-								),
-							},
-						],
-					};
-				}
-
-				const config = await loadGoogleConfig(this.env, userId, slug);
-				const hasToken = !!(await loadGoogleToken(this.env, userId, slug));
-
-				return {
-					content: [
-						{
-							type: "text" as const,
-							text: JSON.stringify(
-								{
-									slug,
-									userId,
-									config: config ?? "no config",
-									googleAccountConnected: hasToken,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				};
-			},
-		);
 
 		// ─── Module tool registrations ─────────────────────────────────────────
 		// Registration strategy: ALL tools registered unconditionally at init().

@@ -42,18 +42,15 @@
 	},
 	"kv_namespaces": [
 		{
+			// title: workspace-mcp-oauth-kv (account a12823016…)
 			"binding": "OAUTH_KV",
-			"id": "74ef76f891b24987a6230480e8a454da"
+			"id": "ec3bea4cb8004bb486b5eafa91b2ea06"
 		},
 		{
-			/**
-			 * Google Workspace config + token storage (separate from OAUTH_KV).
-			 * PLACEHOLDER id — replace before deploying:
-			 *   wrangler kv namespace create WS_KV
-			 * Local dev (`bun run dev`) simulates KV in .wrangler/state/ regardless.
-			 */
+			// Google Workspace config + token storage (separate from OAUTH_KV).
+			// title: workspace-mcp-ws-kv (account a12823016…)
 			"binding": "WS_KV",
-			"id": "00000000000000000000000000000001"
+			"id": "d130dd427e794faa99dfb6b132931895"
 		}
 	],
 	"observability": {
@@ -65,7 +62,7 @@
 	"routes": [
 		{
 			"custom_domain": true,
-			"pattern": "workspace-mcp-cf.rockyshoreslabs.io"
+			"pattern": "workspace-mcp.rockyshoreslabs.io"
 		}
 	]
 }
