@@ -162,7 +162,7 @@ GOOGLE_CLIENT_SECRET=<client secret>
 (local `.env.local`) or as Worker secrets for deployment (see below).
 
 ### Extra setup for two services (optional)
-- **Google Search (`gsearch`)** uses the **Programmable Search Engine** — an *API-key* product, not OAuth. Create a search engine at [programmablesearchengine.google.com](https://programmablesearchengine.google.com) (copy its **engine ID** / `cx`) and an **API key** scoped to the Custom Search API, then set `gis` and `GOOGLE_PSE_ENGINE_ID`.
+- **Google Search (`gsearch`)** uses the **Programmable Search Engine** — an *API-key* product, not OAuth. Create a search engine at [programmablesearchengine.google.com](https://programmablesearchengine.google.com) (copy its **engine ID** / `cx`) and an **API key** scoped to the Custom Search API, then set `GOOGLE_PSE_API_KEY` and `GOOGLE_PSE_ENGINE_ID`.
 - **Google Chat (`gchat`)** requires a **Chat app configuration** in the project (APIs & Services → Google Chat API → **Configuration**) even for user-credential calls; without it, Chat calls return `Chat app not found`.
 
 ---
