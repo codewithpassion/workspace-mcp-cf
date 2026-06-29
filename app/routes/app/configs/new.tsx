@@ -1,4 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ServiceSelector } from "@/components/service-selector";
@@ -15,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, type GoogleService } from "@/lib/api";
 import { SEARCH_UNCONFIGURED_REASON } from "@/lib/service-availability";
+import { generateSlug } from "@/lib/slug";
 
 export const Route = createFileRoute("/app/configs/new")({
 	component: NewConfigPage,
@@ -23,7 +25,7 @@ export const Route = createFileRoute("/app/configs/new")({
 function NewConfigPage() {
 	const router = useRouter();
 	const [submitting, setSubmitting] = useState(false);
-	const [slug, setSlug] = useState("");
+	const [slug, setSlug] = useState(generateSlug);
 	const [displayName, setDisplayName] = useState("");
 	const [searchConfigured, setSearchConfigured] = useState(true);
 	const [enabledServices, setEnabledServices] = useState<Set<GoogleService>>(
@@ -85,16 +87,20 @@ function NewConfigPage() {
 				<CardContent className="space-y-4">
 					<div className="space-y-2">
 						<Label htmlFor="slug">Slug</Label>
-						<Input
-							id="slug"
-							required
-							pattern="^[a-z0-9][a-z0-9-]{1,62}$"
-							placeholder="my-workspace"
-							value={slug}
-							onChange={(e) => setSlug(e.target.value)}
-						/>
+						<div className="flex gap-2">
+							<Input id="slug" readOnly value={slug} className="font-mono" />
+							<Button
+								type="button"
+								variant="outline"
+								size="icon"
+								aria-label="Regenerate slug"
+								onClick={() => setSlug(generateSlug())}
+							>
+								<RefreshCw className="h-4 w-4" />
+							</Button>
+						</div>
 						<p className="text-xs text-muted-foreground">
-							lowercase letters, digits, hyphens; 2-63 chars
+							auto-generated &mdash; use the button to get a new one
 						</p>
 					</div>
 					<div className="space-y-2">
