@@ -276,7 +276,7 @@ function formatBodyContent(
 		const s = html.trim();
 		if (s)
 			return s.length > HTML_BODY_TRUNCATE_LIMIT
-				? s.slice(0, HTML_BODY_TRUNCATE_LIMIT) + "\n\n[Content truncated...]"
+				? `${s.slice(0, HTML_BODY_TRUNCATE_LIMIT)}\n\n[Content truncated...]`
 				: s;
 		return text.trim() || "[No readable content found]";
 	}
@@ -305,19 +305,19 @@ function formatMessageHeaderLines(
 	const lines: string[] = [];
 	if (messageId) lines.push(`Message ID: ${messageId}`);
 	lines.push(
-		`Subject: ${headers["Subject"] ?? "(no subject)"}`,
-		`From: ${headers["From"] ?? "(unknown sender)"}`,
-		`Date: ${headers["Date"] ?? "(unknown date)"}`,
+		`Subject: ${headers.Subject ?? "(no subject)"}`,
+		`From: ${headers.From ?? "(unknown sender)"}`,
+		`Date: ${headers.Date ?? "(unknown date)"}`,
 	);
 	if (headers["Message-ID"]) lines.push(`Message-ID: ${headers["Message-ID"]}`);
 	if (headers["In-Reply-To"])
 		lines.push(`In-Reply-To: ${headers["In-Reply-To"]}`);
-	if (headers["References"]) lines.push(`References: ${headers["References"]}`);
-	if (headers["To"]) lines.push(`To: ${headers["To"]}`);
-	if (headers["Cc"]) lines.push(`Cc: ${headers["Cc"]}`);
+	if (headers.References) lines.push(`References: ${headers.References}`);
+	if (headers.To) lines.push(`To: ${headers.To}`);
+	if (headers.Cc) lines.push(`Cc: ${headers.Cc}`);
 	if (headers["List-Unsubscribe"])
 		lines.push(`List-Unsubscribe: ${headers["List-Unsubscribe"]}`);
-	if (headers["Precedence"]) lines.push(`Precedence: ${headers["Precedence"]}`);
+	if (headers.Precedence) lines.push(`Precedence: ${headers.Precedence}`);
 	if (headers["List-Id"]) lines.push(`List-Id: ${headers["List-Id"]}`);
 	return lines;
 }
@@ -342,7 +342,7 @@ function formatThreadContent(
 	for (const h of messages[0].payload?.headers ?? []) {
 		firstHdrs[h.name] = h.value;
 	}
-	const threadSubject = firstHdrs["Subject"] ?? "(no subject)";
+	const threadSubject = firstHdrs.Subject ?? "(no subject)";
 
 	const lines: string[] = [
 		`Thread ID: ${threadId}`,
@@ -373,13 +373,13 @@ function formatThreadContent(
 		const atts = extractAttachments(payload);
 
 		lines.push(`=== Message ${i + 1} ===`);
-		lines.push(`From: ${hMap["From"] ?? "(unknown)"}`);
-		lines.push(`Date: ${hMap["Date"] ?? "(unknown)"}`);
+		lines.push(`From: ${hMap.From ?? "(unknown)"}`);
+		lines.push(`Date: ${hMap.Date ?? "(unknown)"}`);
 		if (hMap["Message-ID"]) lines.push(`Message-ID: ${hMap["Message-ID"]}`);
 		if (hMap["In-Reply-To"]) lines.push(`In-Reply-To: ${hMap["In-Reply-To"]}`);
-		if (hMap["References"]) lines.push(`References: ${hMap["References"]}`);
-		if (hMap["Subject"] && hMap["Subject"] !== threadSubject)
-			lines.push(`Subject: ${hMap["Subject"]}`);
+		if (hMap.References) lines.push(`References: ${hMap.References}`);
+		if (hMap.Subject && hMap.Subject !== threadSubject)
+			lines.push(`Subject: ${hMap.Subject}`);
 
 		if (bodyFormat === "raw") {
 			lines.push("", `--- ${bodyLabel} ---`, bodyData, "");
@@ -460,7 +460,7 @@ function analyzeThreadOwnership(
 	const firstHdrs: Record<string, string> = {};
 	for (const h of messages[0].payload?.headers ?? [])
 		firstHdrs[h.name] = h.value;
-	const threadSubject: string | null = firstHdrs["Subject"] ?? null;
+	const threadSubject: string | null = firstHdrs.Subject ?? null;
 
 	const senderCounts: Record<string, number> = {};
 	const allParticipants = new Set<string>();
@@ -497,13 +497,13 @@ function analyzeThreadOwnership(
 
 		for (const p of msgParts) nonDraftParticipants.add(p);
 
-		const fromNorm = hMap["From"] ? normalizeEmailAddr(hMap["From"]) : "";
+		const fromNorm = hMap.From ? normalizeEmailAddr(hMap.From) : "";
 		if (fromNorm.includes("@")) {
 			senderCounts[fromNorm] = (senderCounts[fromNorm] ?? 0) + 1;
 		}
 
 		let ts = msg.internalDate ? parseInt(msg.internalDate, 10) || 0 : 0;
-		if (ts === 0 && hMap["Date"]) ts = new Date(hMap["Date"]).getTime() || 0;
+		if (ts === 0 && hMap.Date) ts = new Date(hMap.Date).getTime() || 0;
 
 		if (lastNonDraft === null || ts >= lastNonDraft.ts) {
 			lastNonDraft = { ts, headers: hMap };
@@ -524,7 +524,7 @@ function analyzeThreadOwnership(
 		};
 	}
 
-	const lastSenderRaw = lastNonDraft.headers["From"] ?? "";
+	const lastSenderRaw = lastNonDraft.headers.From ?? "";
 	const lastSenderNorm = lastSenderRaw ? normalizeEmailAddr(lastSenderRaw) : "";
 	const lastTimestamp =
 		lastNonDraft.ts > 0 ? new Date(lastNonDraft.ts).toISOString() : null;
@@ -565,10 +565,10 @@ function buildForwardContent(params: {
 	subjectOverride: string | null;
 }): { subject: string; body: string; bodyFormat: "plain" | "html" } {
 	const { headers, bodies, forwardNote, noteFormat, subjectOverride } = params;
-	const origSubject = headers["Subject"] ?? "(no subject)";
-	const origFrom = headers["From"] ?? "(unknown sender)";
-	const origDate = headers["Date"] ?? "(unknown date)";
-	const origTo = headers["To"] ?? "";
+	const origSubject = headers.Subject ?? "(no subject)";
+	const origFrom = headers.From ?? "(unknown sender)";
+	const origDate = headers.Date ?? "(unknown date)";
+	const origTo = headers.To ?? "";
 	const hasHtml = bodies.html.trim().length > 0;
 
 	const esc = (s: string) =>
@@ -1590,10 +1590,10 @@ export function register(server: McpServer, ctx: ToolContext): void {
 						}
 					}
 					if (!resolvedTo) {
-						resolvedTo = lastHdrs["Reply-To"] || lastHdrs["From"] || resolvedTo;
+						resolvedTo = lastHdrs["Reply-To"] || lastHdrs.From || resolvedTo;
 					}
-					if (!resolvedSubject?.trim() && lastHdrs["Subject"]) {
-						resolvedSubject = lastHdrs["Subject"];
+					if (!resolvedSubject?.trim() && lastHdrs.Subject) {
+						resolvedSubject = lastHdrs.Subject;
 					}
 				} catch {
 					// Non-fatal
@@ -1975,26 +1975,24 @@ export function register(server: McpServer, ctx: ToolContext): void {
 				const act = f.action ?? {};
 				lines.push(`Filter ID: ${fid}`, "  Criteria:");
 				const critLines: string[] = [];
-				if (crit["from"]) critLines.push(`From: ${String(crit["from"])}`);
-				if (crit["to"]) critLines.push(`To: ${String(crit["to"])}`);
-				if (crit["subject"])
-					critLines.push(`Subject: ${String(crit["subject"])}`);
-				if (crit["query"]) critLines.push(`Query: ${String(crit["query"])}`);
-				if (crit["negatedQuery"])
-					critLines.push(`Exclude: ${String(crit["negatedQuery"])}`);
-				if (crit["hasAttachment"]) critLines.push("Has attachment");
-				if (crit["excludeChats"]) critLines.push("Exclude chats");
+				if (crit.from) critLines.push(`From: ${String(crit.from)}`);
+				if (crit.to) critLines.push(`To: ${String(crit.to)}`);
+				if (crit.subject) critLines.push(`Subject: ${String(crit.subject)}`);
+				if (crit.query) critLines.push(`Query: ${String(crit.query)}`);
+				if (crit.negatedQuery)
+					critLines.push(`Exclude: ${String(crit.negatedQuery)}`);
+				if (crit.hasAttachment) critLines.push("Has attachment");
+				if (crit.excludeChats) critLines.push("Exclude chats");
 				if (critLines.length === 0) critLines.push("(none)");
 				for (const cl of critLines) lines.push(`    - ${cl}`);
 
 				lines.push("  Actions:");
 				const actLines: string[] = [];
-				if (act["forward"])
-					actLines.push(`Forward to: ${String(act["forward"])}`);
-				const addIds = act["addLabelIds"];
+				if (act.forward) actLines.push(`Forward to: ${String(act.forward)}`);
+				const addIds = act.addLabelIds;
 				if (Array.isArray(addIds) && addIds.length > 0)
 					actLines.push(`Add labels: ${(addIds as string[]).join(", ")}`);
-				const remIds = act["removeLabelIds"];
+				const remIds = act.removeLabelIds;
 				if (Array.isArray(remIds) && remIds.length > 0)
 					actLines.push(`Remove labels: ${(remIds as string[]).join(", ")}`);
 				if (actLines.length === 0) actLines.push("(none)");
