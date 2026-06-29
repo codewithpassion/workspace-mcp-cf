@@ -1,8 +1,12 @@
 import OAuthProvider from "@cloudflare/workers-oauth-provider";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import {
+	McpServer,
+	type RegisteredTool,
+} from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Connection, ConnectionContext } from "agents";
 import { McpAgent } from "agents/mcp";
 import { ClerkHandler } from "../clerk-handler";
+import { type GoogleService, loadGoogleConfig } from "../storage";
 import type { Props } from "../utils";
 import { getGoogleService, type ToolContext } from "./google-service";
 import { register as registerAppsScript } from "./tools/gappsscript";
@@ -32,6 +36,19 @@ export class MyMCP extends McpAgent<Env, Record<string, never>, Props> {
 	private _slug: string | undefined = undefined;
 
 	/**
+	 * Maps each registered tool to the GoogleService it belongs to, recorded as
+	 * tools register (see taggedServer). Used by applyServiceFilter() to toggle
+	 * each tool's `enabled` flag based on the active config's enabledServices.
+	 */
+	private _toolHandles: Array<{
+		service: GoogleService;
+		tool: RegisteredTool;
+	}> = [];
+
+	/** The slug the tool filter was last applied for; guards re-running it. */
+	private _filteredForSlug: string | undefined = undefined;
+
+	/**
 	 * Capture the config slug from the X-Config-Slug header before the parent
 	 * handler processes the MCP message. This fires for EVERY incoming request
 	 * (POST tool calls and GET SSE streams), so the slug is always current even
@@ -49,7 +66,62 @@ export class MyMCP extends McpAgent<Env, Record<string, never>, Props> {
 	): Promise<void> {
 		const slug = ctx.request.headers.get("X-Config-Slug");
 		if (slug) this._slug = slug;
+		await this.applyServiceFilter();
 		await super.onConnect(conn, ctx);
+	}
+
+	/**
+	 * Restricts the advertised tool surface to the services enabled for the
+	 * active config. All tools are registered unconditionally at init() (the slug
+	 * is unknown then), so without this filter tools/list would expose all 121
+	 * tools regardless of the endpoint's enabledServices. Here — once the slug is
+	 * known — we flip each tool's `enabled` flag, which the SDK honours in BOTH
+	 * tools/list (filtered out) and tools/call (rejected). The call-time check in
+	 * getGoogleService() remains as defense-in-depth.
+	 *
+	 * Runs once per session (the slug is sealed per DO). We set `enabled`
+	 * directly rather than calling .disable()/.enable(): those go through
+	 * update() → sendToolListChanged(), emitting a spurious tools/list_changed
+	 * notification. The flag is applied before the client's first tools/list, so
+	 * no notification is needed.
+	 */
+	private async applyServiceFilter(): Promise<void> {
+		const slug = this._slug;
+		const userId = this.props?.userId;
+		// props/slug may not be populated on the very first connect; a later
+		// request's onConnect will apply the filter before tools/list runs.
+		if (!slug || !userId) return;
+		if (this._filteredForSlug === slug) return;
+
+		const config = await loadGoogleConfig(this.env, userId, slug);
+		const enabled = new Set<GoogleService>(config?.enabledServices ?? []);
+		for (const { service, tool } of this._toolHandles) {
+			tool.enabled = enabled.has(service);
+		}
+		this._filteredForSlug = slug;
+	}
+
+	/**
+	 * Returns a proxy over `this.server` that behaves identically except it
+	 * records every tool registered through it under `service`, so the list
+	 * filter (applyServiceFilter) knows which service each tool belongs to.
+	 */
+	private taggedServer(service: GoogleService): McpServer {
+		const real = this.server;
+		const handles = this._toolHandles;
+		return new Proxy(real, {
+			get(target, prop, receiver) {
+				if (prop === "tool") {
+					return (...args: Parameters<McpServer["tool"]>) => {
+						const handle = target.tool(...args);
+						handles.push({ service, tool: handle });
+						return handle;
+					};
+				}
+				const value = Reflect.get(target, prop, receiver);
+				return typeof value === "function" ? value.bind(target) : value;
+			},
+		});
 	}
 
 	async init() {
@@ -86,22 +158,25 @@ export class MyMCP extends McpAgent<Env, Record<string, never>, Props> {
 		};
 
 		// ─── Module tool registrations ─────────────────────────────────────────
-		// Registration strategy: ALL tools registered unconditionally at init().
-		// At call time, ctx.getService() checks enabledServices and throws
-		// if the service is not enabled for the resolved config.
-		// (Slug is unknown at init() so conditional registration is not possible.)
-		registerCalendar(this.server, ctx);
-		registerGmail(this.server, ctx);
-		registerDrive(this.server, ctx);
-		registerDocs(this.server, ctx);
-		registerSheets(this.server, ctx);
-		registerSlides(this.server, ctx);
-		registerForms(this.server, ctx);
-		registerTasks(this.server, ctx);
-		registerChat(this.server, ctx);
-		registerContacts(this.server, ctx);
-		registerSearch(this.server, ctx);
-		registerAppsScript(this.server, ctx);
+		// Registration strategy: ALL tools registered unconditionally at init()
+		// (the slug — and thus the config's enabledServices — is unknown here).
+		// Each module registers through taggedServer(service) so every tool is
+		// tagged with its GoogleService; once a connection is established and the
+		// slug is known, applyServiceFilter() disables tools whose service isn't
+		// enabled for the config, so tools/list and tools/call only expose the
+		// selected services. ctx.getService() also re-checks at call time.
+		registerCalendar(this.taggedServer("gcalendar"), ctx);
+		registerGmail(this.taggedServer("gmail"), ctx);
+		registerDrive(this.taggedServer("gdrive"), ctx);
+		registerDocs(this.taggedServer("gdocs"), ctx);
+		registerSheets(this.taggedServer("gsheets"), ctx);
+		registerSlides(this.taggedServer("gslides"), ctx);
+		registerForms(this.taggedServer("gforms"), ctx);
+		registerTasks(this.taggedServer("gtasks"), ctx);
+		registerChat(this.taggedServer("gchat"), ctx);
+		registerContacts(this.taggedServer("gcontacts"), ctx);
+		registerSearch(this.taggedServer("gsearch"), ctx);
+		registerAppsScript(this.taggedServer("gappsscript"), ctx);
 	}
 }
 

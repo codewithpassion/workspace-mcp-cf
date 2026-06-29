@@ -92,7 +92,7 @@ app/
 - `bun run lint` → biome
 
 ### Adding tools
-Register tools in `MyMCP.init()` in `src/mcp/mcp-app.ts`. Use `this.server.tool(...)` and `this.props` (userId, email, etc.) and `this.env` (KV, etc.).
+Tools live in per-service modules under `src/mcp/tools/`, each exporting `register(server, ctx)`. Register them in `MyMCP.init()` in `src/mcp/mcp-app.ts` via `this.taggedServer("<service>")` — **never `this.server` directly**. The tag records each tool's `GoogleService` so `applyServiceFilter()` can hide it from `tools/list`/`tools/call` on endpoints where that service isn't in the config's `enabledServices`. A tool registered through bare `this.server` is untagged and therefore stays enabled on every endpoint, bypassing the per-config filter. Inside handlers, get an access token via `ctx.getService("<service>")` (it re-checks `enabledServices` at call time) and use `ctx.getUserId()` / `ctx.env`.
 
 ### Production deploy
 1. Set Clerk redirect URI to `https://<host>/callback`.
