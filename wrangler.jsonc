@@ -62,7 +62,7 @@
 	"routes": [
 		{
 			"custom_domain": true,
-			"pattern": "workspace-mcp.rockyshoreslabs.io"
+			"pattern": "workspace-mcp.workbenchai.io"
 		}
 	]
 }
