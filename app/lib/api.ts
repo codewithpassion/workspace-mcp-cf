@@ -47,6 +47,11 @@ export type CreateConfigInput = {
 
 export type UpdateConfigInput = Partial<Omit<CreateConfigInput, "slug">>;
 
+/** Which optional services the server has the env config to support. */
+export type Capabilities = {
+	searchConfigured: boolean;
+};
+
 async function request<T>(input: string, init?: RequestInit): Promise<T> {
 	const res = await fetch(input, {
 		...init,
@@ -67,6 +72,7 @@ async function request<T>(input: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+	capabilities: () => request<Capabilities>("/api/capabilities"),
 	list: () => request<ConfigRecord[]>("/api/configs"),
 	get: (slug: string) =>
 		request<ConfigRecord>(`/api/configs/${encodeURIComponent(slug)}`),
