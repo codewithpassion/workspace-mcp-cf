@@ -1,6 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ServiceSelector } from "@/components/service-selector";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -12,25 +13,33 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api, type GoogleService, SERVICE_LABELS } from "@/lib/api";
+import { api, type GoogleService } from "@/lib/api";
+import { SEARCH_UNCONFIGURED_REASON } from "@/lib/service-availability";
 
 export const Route = createFileRoute("/app/configs/new")({
 	component: NewConfigPage,
 });
-
-const ALL_SERVICES = Object.entries(SERVICE_LABELS) as [
-	GoogleService,
-	string,
-][];
 
 function NewConfigPage() {
 	const router = useRouter();
 	const [submitting, setSubmitting] = useState(false);
 	const [slug, setSlug] = useState("");
 	const [displayName, setDisplayName] = useState("");
+	const [searchConfigured, setSearchConfigured] = useState(true);
 	const [enabledServices, setEnabledServices] = useState<Set<GoogleService>>(
 		new Set(),
 	);
+
+	useEffect(() => {
+		api
+			.capabilities()
+			.then((c) => setSearchConfigured(c.searchConfigured))
+			.catch(() => {});
+	}, []);
+
+	const disabledServices = searchConfigured
+		? undefined
+		: { gsearch: SEARCH_UNCONFIGURED_REASON };
 
 	function toggleService(id: GoogleService) {
 		setEnabledServices((prev) => {
@@ -103,22 +112,11 @@ function NewConfigPage() {
 						<p className="text-xs text-muted-foreground">
 							Select at least one Google service to enable.
 						</p>
-						<div className="grid grid-cols-2 gap-2 pt-1">
-							{ALL_SERVICES.map(([id, label]) => (
-								<label
-									key={id}
-									className="flex cursor-pointer items-center gap-2 text-sm"
-								>
-									<input
-										type="checkbox"
-										className="h-4 w-4 accent-primary"
-										checked={enabledServices.has(id)}
-										onChange={() => toggleService(id)}
-									/>
-									{label}
-								</label>
-							))}
-						</div>
+						<ServiceSelector
+							value={enabledServices}
+							onToggle={toggleService}
+							disabledServices={disabledServices}
+						/>
 					</div>
 				</CardContent>
 				<CardFooter className="justify-end gap-2">

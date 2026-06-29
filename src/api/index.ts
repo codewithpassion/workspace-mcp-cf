@@ -86,6 +86,20 @@ const patchBody = z.object({
 
 // ─── Config routes ────────────────────────────────────────────────────────────
 
+// Reports which optional services are usable given the server's env config, so
+// the UI can disable services whose required secrets are missing. Currently only
+// Google Search (gsearch) needs extra secrets (Programmable Search Engine).
+apiApp.get("/capabilities", (c) => {
+	const env = c.env as Env & {
+		GOOGLE_PSE_API_KEY?: string;
+		GOOGLE_PSE_ENGINE_ID?: string;
+	};
+	const searchConfigured = Boolean(
+		env.GOOGLE_PSE_API_KEY && env.GOOGLE_PSE_ENGINE_ID,
+	);
+	return c.json({ searchConfigured });
+});
+
 apiApp.get("/configs", async (c) => {
 	const userId = c.get("userId");
 	const records = await listGoogleConfigs(c.env, userId);
