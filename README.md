@@ -147,14 +147,34 @@ APIs & Services → **OAuth consent screen**:
 - The Google Workspace scopes are **"sensitive"/"restricted"**. In **Testing** mode they work for **test users** (and for *External* apps, up to ~100 logins) **without** Google verification — fine for personal/team use. Going public to arbitrary users requires Google's verification review.
 - **External + Testing:** add every Google account you intend to connect under **Test users**.
 
-### 4. Create the OAuth client (Web application)
+### 4. Register the OAuth scopes (Data access)
+APIs & Services → OAuth consent screen → **Data access** → **Add or remove scopes**. Every scope the app requests must be listed here, or Google strips it from consent. The source of truth is [`src/mcp/scopes.ts`](src/mcp/scopes.ts) (plus `https://mail.google.com/`, used by Gmail). Add the base scopes (`openid`, `userinfo.email`, `userinfo.profile`) and the per-service scopes for the services you expose:
+
+| Service | Scopes (`https://www.googleapis.com/auth/…`) |
+| --- | --- |
+| Gmail | `gmail.readonly`, `gmail.send`, `gmail.compose`, `gmail.modify`, `gmail.labels`, `gmail.settings.basic`, plus `https://mail.google.com/` |
+| Calendar | `calendar`, `calendar.readonly`, `calendar.events` |
+| Drive | `drive`, `drive.readonly`, `drive.file` |
+| Docs | `documents`, `documents.readonly` (+ Drive scopes) |
+| Sheets | `spreadsheets`, `spreadsheets.readonly`, `drive.readonly` |
+| Slides | `presentations`, `presentations.readonly` |
+| Forms | `forms.body`, `forms.body.readonly`, `forms.responses.readonly` |
+| Tasks | `tasks`, `tasks.readonly` |
+| Chat | `chat.messages`, `chat.messages.readonly`, `chat.spaces`, `chat.spaces.readonly` |
+| Contacts | `contacts`, `contacts.readonly` |
+| Apps Script | `script.projects(.readonly)`, `script.deployments(.readonly)`, `script.processes`, `script.metrics`, `script.external_request`, `script.scriptapp`, `drive.file` |
+
+Gmail full access (`https://mail.google.com/`, `gmail.modify`) and full Drive (`drive`) are **restricted** scopes — going public requires Google verification (incl. a CASA assessment). In **Testing** mode, listed test users can grant them without verification. (`gsearch` uses an API key, not OAuth — its `cse` scope is vestigial.)
+
+### 5. Create the OAuth client (Web application)
 APIs & Services → **Credentials** → **Create credentials → OAuth client ID** → **Web application**:
+- **Authorized JavaScript origins:** scheme + host, no path — e.g. `https://workspace-mcp.workbenchai.io` (and `http://localhost:8788` for local dev).
 - **Authorized redirect URI:** `https://<your-host>/api/google-auth/callback`
-  - e.g. `https://workspace-mcp.rockyshoreslabs.io/api/google-auth/callback`
+  - e.g. `https://workspace-mcp.workbenchai.io/api/google-auth/callback`
   - ⚠️ Google only allows `http://` for `localhost` / `127.0.0.1`. **All other hosts must be `https://`.** For local dev behind an HTTPS tunnel, register the tunnel's callback URL (and re-register if the tunnel URL changes).
 - Click **Create**, then copy the **Client ID** and **Client secret**.
 
-### 5. Wire the credentials in
+### 6. Wire the credentials in
 ```env
 GOOGLE_CLIENT_ID=<client id>.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=<client secret>
@@ -162,7 +182,7 @@ GOOGLE_CLIENT_SECRET=<client secret>
 (local `.env.local`) or as Worker secrets for deployment (see below).
 
 ### Extra setup for two services (optional)
-- **Google Search (`gsearch`)** uses the **Programmable Search Engine** — an *API-key* product, not OAuth. Create a search engine at [programmablesearchengine.google.com](https://programmablesearchengine.google.com) (copy its **engine ID** / `cx`) and an **API key** scoped to the Custom Search API, then set `GOOGLE_PSE_API_KEY` and `GOOGLE_PSE_ENGINE_ID`.
+- **Google Search (`gsearch`)** uses the **Programmable Search Engine** — an *API-key* product, not OAuth. Create a search engine at [programmablesearchengine.google.com](https://programmablesearchengine.google.com) (copy its **engine ID** / `cx`) and an **API key** scoped to the Custom Search API, then set `gis` and `GOOGLE_PSE_ENGINE_ID`.
 - **Google Chat (`gchat`)** requires a **Chat app configuration** in the project (APIs & Services → Google Chat API → **Configuration**) even for user-credential calls; without it, Chat calls return `Chat app not found`.
 
 ---
@@ -236,4 +256,4 @@ The client runs the OAuth handshake (Clerk) on first connect, then the tools act
 
 ## License
 
-MIT (see [LICENSE](LICENSE)). Derived from [taylorwilsdon/google_workspace_mcp](https://github.com/taylorwilsdon/google_workspace_mcp) (MIT), whose copyright notice is retained in [LICENSE](LICENSE).
+Apache 2.0 (see [LICENSE](LICENSE)). Derived from [taylorwilsdon/google_workspace_mcp](https://github.com/taylorwilsdon/google_workspace_mcp) (MIT).
