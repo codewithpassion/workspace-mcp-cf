@@ -236,4 +236,4 @@ The client runs the OAuth handshake (Clerk) on first connect, then the tools act
 
 ## License
 
-Apache 2.0 (see [LICENSE](LICENSE)). Derived from [taylorwilsdon/google_workspace_mcp](https://github.com/taylorwilsdon/google_workspace_mcp) (MIT).
+MIT (see [LICENSE](LICENSE)). Derived from [taylorwilsdon/google_workspace_mcp](https://github.com/taylorwilsdon/google_workspace_mcp) (MIT), whose copyright notice is retained in [LICENSE](LICENSE).
